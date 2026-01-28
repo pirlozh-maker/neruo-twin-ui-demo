@@ -1,7 +1,7 @@
-import { useAppStore } from "../state/store";
+import { useActiveRunResult } from "../state/selectors";
 
 const RunStatus = () => {
-  const runResult = useAppStore((state) => state.runResult);
+  const runResult = useActiveRunResult();
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-xs text-slate-300">

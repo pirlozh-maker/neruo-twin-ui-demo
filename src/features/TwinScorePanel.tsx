@@ -1,7 +1,7 @@
-import { useAppStore } from "../state/store";
+import { useActiveRunResult } from "../state/selectors";
 
 const TwinScorePanel = () => {
-  const runResult = useAppStore((state) => state.runResult);
+  const runResult = useActiveRunResult();
   const score = runResult?.twinScore;
 
   return (

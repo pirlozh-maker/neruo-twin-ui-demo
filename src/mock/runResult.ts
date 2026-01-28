@@ -5,7 +5,8 @@ const randomBetween = (min: number, max: number) =>
 
 const pickOodLevel = (score: number): TwinScore["oodLevel"] => {
   if (score > 85) return "low";
-  if (score > 70) return "medium";
+  if (score > 75) return "medium";
+  if (score > 65) return "warning";
   return "high";
 };
 
@@ -36,6 +37,14 @@ export const generateRunResult = (
     runId: `run_${Math.floor(Math.random() * 10000)}`,
     createdAt: new Date().toISOString(),
     latencyMs,
+    provenance: {
+      modelVersion: "nk-2.3.1",
+      dataVersion: "eeg-v5",
+      recipeId: `recipe_${quality}`,
+      seed: Math.floor(Math.random() * 1000),
+      raw_fingerprint: `raw_${Math.floor(Math.random() * 99999)}`,
+      feature_snapshot_version: "fsnap_0.3.0",
+    },
     metrics: {
       speed: randomBetween(1.3, 2.2),
       phase: randomBetween(0.2, 1.0),

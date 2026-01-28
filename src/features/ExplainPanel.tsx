@@ -1,7 +1,7 @@
-import { useAppStore } from "../state/store";
+import { useActiveRunResult } from "../state/selectors";
 
 const ExplainPanel = () => {
-  const runResult = useAppStore((state) => state.runResult);
+  const runResult = useActiveRunResult();
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">

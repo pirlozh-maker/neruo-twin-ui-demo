@@ -54,7 +54,7 @@ export type TwinScoreBreakdown = {
 export type TwinScore = {
   total: number;
   breakdown: TwinScoreBreakdown;
-  oodLevel: "low" | "medium" | "high";
+  oodLevel: "low" | "medium" | "warning" | "high";
 };
 
 export type ExplainResult = {
@@ -67,6 +67,14 @@ export type RunResult = {
   runId: string;
   createdAt: string;
   latencyMs: number;
+  provenance: {
+    modelVersion: string;
+    dataVersion: string;
+    recipeId: string;
+    seed: number;
+    raw_fingerprint: string;
+    feature_snapshot_version: string;
+  };
   metrics: {
     speed: number;
     phase: number;
@@ -80,4 +88,55 @@ export type RunResult = {
     y: number[];
     heat: number[][];
   };
+};
+
+export type Macro = {
+  id: string;
+  name: string;
+  description: string;
+  recipePatch: Partial<Recipe>;
+};
+
+export type ScenarioVariant = {
+  id: string;
+  name: string;
+  recipePatch: Partial<Recipe>;
+};
+
+export type ScenarioSet = {
+  id: string;
+  name: string;
+  horizon_ms: number;
+  sample_count: number;
+  baseRecipe: Recipe;
+  variants: ScenarioVariant[];
+};
+
+export type ScenarioResult = {
+  scenarioId: string;
+  variantId: string;
+  runResult: RunResult;
+};
+
+export type CorrectionClip = {
+  id: string;
+  time_ms: number;
+  apply_mode: "local_fix" | "calibrate_hint";
+  points: Array<{
+    id: "RToe" | "RHeel";
+    dx: number;
+    dy: number;
+  }>;
+};
+
+export type JobType = "bake" | "scenario" | "sweep";
+
+export type JobStatus = "queued" | "running" | "canceled" | "completed";
+
+export type Job = {
+  id: string;
+  type: JobType;
+  label: string;
+  status: JobStatus;
+  createdAt: number;
 };

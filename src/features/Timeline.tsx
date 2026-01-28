@@ -12,7 +12,7 @@ const TRACKS = [
 const TOTAL_MS = 4000;
 
 const Timeline = () => {
-  const { doWindow, setDoWindow, playhead, setPlayhead } = useAppStore();
+  const { doWindow, setDoWindow, playhead, setPlayhead, activeScenarioVariantId } = useAppStore();
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
 
@@ -56,6 +56,11 @@ const Timeline = () => {
           do-window: {Math.round(selection.start)}ms → {Math.round(selection.end)}ms
         </div>
       </div>
+      {activeScenarioVariantId && (
+        <div className="mt-2 text-[11px] text-slate-500">
+          Scenario view: {activeScenarioVariantId}
+        </div>
+      )}
       <div className="mt-4 space-y-3">
         {TRACKS.map((track) => (
           <div key={track.id} className="space-y-1">

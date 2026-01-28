@@ -1,4 +1,4 @@
-import type { Recipe, RunResult, TrialMeta } from "../types";
+import type { CorrectionClip, Macro, Recipe, RunResult, ScenarioSet, TrialMeta } from "../types";
 
 export const downloadJson = (filename: string, data: unknown) => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -10,22 +10,29 @@ export const downloadJson = (filename: string, data: unknown) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportBundle = (
-  recipe: Recipe,
-  runResult: RunResult | null,
-  trial: TrialMeta,
-) => {
+export const exportBundle = (params: {
+  recipe: Recipe;
+  runResult: RunResult | null;
+  trial: TrialMeta;
+  macros: Macro[];
+  scenarioSet: ScenarioSet | null;
+  correction: CorrectionClip | null;
+}) => {
+  const { recipe, runResult, trial, macros, scenarioSet, correction } = params;
   const provenance = {
     modelVersion: trial.modelVersion,
     dataVersion: trial.dataVersion,
     recipeId: trial.recipeId,
     seed: trial.seed,
+    raw_fingerprint: `raw_${trial.id}`,
+    feature_snapshot_version: "fsnap_0.3.0",
     run_hash: `${trial.id}-${Date.now()}`,
   };
 
-  downloadJson("neurokine_bundle.json", {
-    recipe,
-    run_result: runResult,
-    provenance,
-  });
+  downloadJson("provenance.json", provenance);
+  downloadJson("recipe.json", recipe);
+  downloadJson("macros.json", macros);
+  if (scenarioSet) downloadJson("scenario_set.json", scenarioSet);
+  if (correction) downloadJson("correction.json", correction);
+  if (runResult) downloadJson("run_result.json", runResult);
 };
