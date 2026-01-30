@@ -9,6 +9,9 @@ import ExplainPanel from "../features/ExplainPanel";
 import RunStatus from "../features/RunStatus";
 import JobQueue from "../features/JobQueue";
 import ScenarioLab from "../features/ScenarioLab";
+import WindowInspector from "../features/WindowInspector";
+import SignalHealthPanel from "../features/SignalHealthPanel";
+import SessionNotesPanel from "../features/SessionNotesPanel";
 import { generateRunResult, generateSweepData } from "../mock/runResult";
 import { exportBundle } from "../utils/exporters";
 import { useAppStore } from "../state/store";
@@ -104,12 +107,15 @@ const StudioPage = () => {
           结果仅供参考：OOD 高风险检测，建议复核数据与参数设置。
         </div>
       )}
-      <main className="grid gap-4 p-6 lg:grid-cols-[1.2fr_1.4fr_1fr]">
+      <main className="grid gap-4 p-6 lg:grid-cols-[1.25fr_1.35fr_1.05fr]">
         <div className="space-y-4">
           <Viewport3D />
+          <SignalHealthPanel />
+          <SessionNotesPanel />
         </div>
         <div className="space-y-4">
           <Timeline />
+          <WindowInspector />
           {activeTab === "scenario" && <ScenarioLab />}
         </div>
         <div className="space-y-4">

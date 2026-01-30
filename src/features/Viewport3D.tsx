@@ -45,19 +45,6 @@ const Viewport3D = () => {
         : "";
   const scenarioLabel = activeScenarioVariantId ? `Scenario: ${activeScenarioVariantId}` : null;
 
-  // Keep refs for frequently-updated values so the animation loop does not
-  // capture stale values or cause the effect to re-run on every frame.
-  const isPlayingRef = useRef(isPlaying);
-  const speedRef = useRef(speed);
-
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  useEffect(() => {
-    speedRef.current = speed;
-  }, [speed]);
-
   useEffect(() => {
     if (!mountRef.current) return;
     const scene = new THREE.Scene();
@@ -65,7 +52,7 @@ const Viewport3D = () => {
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(0, 1.2, 3.2);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(mountRef.current.clientWidth, 280);
+    renderer.setSize(mountRef.current.clientWidth, 320);
     mountRef.current.appendChild(renderer.domElement);
 
     const light = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -94,23 +81,16 @@ const Viewport3D = () => {
 
     const animate = () => {
       requestRef.current = requestAnimationFrame(animate);
-      if (isPlayingRef.current) {
-        const current = useAppStore.getState().playhead;
-        const next = (current + 16 * speedRef.current) % 4000;
-        useAppStore.getState().setPlayhead(next);
+      if (isPlaying) {
+        const next = (playhead + 16 * speed) % 4000;
+        setPlayhead(next);
       }
-      // Read latest values from store so visuals react to state changes without
-      // re-creating the whole scene.
-      const oodLevelNow = useAppStore.getState().runResult?.twinScore.oodLevel ?? "low";
-      const twinOpacityNow = oodLevelNow === "high" ? 0.35 : oodLevelNow === "warning" ? 0.6 : 1;
-      twinMaterial.opacity = twinOpacityNow;
-      twinMaterial.transparent = twinOpacityNow < 1;
-      twinMaterial.color.set(
-        oodLevelNow === "high" ? "#64748b" : oodLevelNow === "warning" ? "#94a3b8" : "#f97316",
-      );
-      cloud.rotation.y += 0.002 * speedRef.current;
-      twinMesh.rotation.x += 0.004 * speedRef.current;
-      twinMesh.rotation.y += 0.002 * speedRef.current;
+      twinMaterial.opacity = twinOpacity;
+      twinMaterial.transparent = twinOpacity < 1;
+      twinMaterial.color.set(oodLevel === "high" ? "#64748b" : oodLevel === "warning" ? "#94a3b8" : "#f97316");
+      cloud.rotation.y += 0.002 * speed;
+      twinMesh.rotation.x += 0.004 * speed;
+      twinMesh.rotation.y += 0.002 * speed;
       renderer.render(scene, camera);
     };
     animate();
@@ -118,8 +98,8 @@ const Viewport3D = () => {
     const handleResize = () => {
       if (!mountRef.current) return;
       const width = mountRef.current.clientWidth;
-      renderer.setSize(width, 280);
-      camera.aspect = width / 280;
+      renderer.setSize(width, 320);
+      camera.aspect = width / 320;
       camera.updateProjectionMatrix();
     };
     window.addEventListener("resize", handleResize);
@@ -130,7 +110,7 @@ const Viewport3D = () => {
       renderer.dispose();
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [isPlaying, playhead, setPlayhead, speed]);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingPoint) return;
@@ -169,7 +149,7 @@ const Viewport3D = () => {
         </div>
       </div>
       <div
-        className={`relative h-[280px] rounded-xl border border-slate-800 ${ciBorder}`}
+        className={`relative h-[320px] rounded-xl border border-slate-800 ${ciBorder}`}
         ref={mountRef}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
