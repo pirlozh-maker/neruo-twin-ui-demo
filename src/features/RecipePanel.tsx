@@ -1,4 +1,3 @@
-import { ChangeEvent } from "react";
 import Accordion from "../components/Accordion";
 import Slider from "../components/Slider";
 import Toggle from "../components/Toggle";

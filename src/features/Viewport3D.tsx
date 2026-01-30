@@ -82,7 +82,8 @@ const Viewport3D = () => {
     const animate = () => {
       requestRef.current = requestAnimationFrame(animate);
       if (isPlaying) {
-        const next = (playhead + 16 * speed) % 4000;
+        const current = useAppStore.getState().playhead;
+        const next = (current + 16 * speed) % 4000;
         setPlayhead(next);
       }
       twinMaterial.opacity = twinOpacity;
@@ -110,7 +111,7 @@ const Viewport3D = () => {
       renderer.dispose();
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [isPlaying, playhead, setPlayhead, speed]);
+  }, [isPlaying, speed]);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingPoint) return;
