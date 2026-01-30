@@ -1,15 +1,23 @@
 import { useState } from "react";
 import Toggle from "../components/Toggle";
+import { useAppStore } from "../state/store";
 
 const SignalHealthPanel = () => {
   const [eegQc, setEegQc] = useState(true);
   const [emgQc, setEmgQc] = useState(false);
   const [imuQc, setImuQc] = useState(true);
   const [lastRun, setLastRun] = useState<string>("Idle");
+  const pushToast = useAppStore((state) => state.pushToast);
 
   const handleRun = () => {
     setLastRun("Running...");
     setTimeout(() => setLastRun(new Date().toLocaleTimeString()), 400);
+    pushToast({
+      id: `toast_qc_${Date.now()}`,
+      title: "QC scan executed",
+      description: "Signal health refresh complete.",
+      tone: "info",
+    });
   };
 
   return (
@@ -33,6 +41,13 @@ const SignalHealthPanel = () => {
             setEegQc(true);
             setEmgQc(false);
             setImuQc(true);
+            setLastRun("Reset");
+            pushToast({
+              id: `toast_qc_reset_${Date.now()}`,
+              title: "QC toggles reset",
+              description: "Returned to default QC channels.",
+              tone: "warning",
+            });
           }}
         >
           Reset Toggles

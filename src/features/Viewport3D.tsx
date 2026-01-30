@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import { useMemo, useState } from "react";
 import Toggle from "../components/Toggle";
 import { useAppStore } from "../state/store";
 import { useActiveRunResult } from "../state/selectors";
+import ViewportPlayback from "./viewport/ViewportPlayback";
+import ViewportCorrectionBar from "./viewport/ViewportCorrectionBar";
+import ViewportCanvas from "./viewport/ViewportCanvas";
 
 type Keypoint = {
   id: "RToe" | "RHeel";
@@ -11,18 +13,17 @@ type Keypoint = {
 };
 
 const Viewport3D = () => {
-  const mountRef = useRef<HTMLDivElement | null>(null);
-  const requestRef = useRef<number>();
   const [isPlaying, setIsPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
   const {
     playhead,
-    setPlayhead,
     correctionMode,
     setCorrectionMode,
     correctionApplyMode,
     setCorrectionApplyMode,
     setCorrection,
+    setCalibrationVersion,
+    pushToast,
     activeScenarioVariantId,
   } = useAppStore();
   const runResult = useActiveRunResult();
@@ -35,7 +36,7 @@ const Viewport3D = () => {
     { id: "RHeel", x: 120, y: 120 },
   ]);
 
-  const oodLevel = runResult?.twinScore.oodLevel ?? "low";
+  const oodLevel = runResult?.ood_level ?? "normal";
   const twinOpacity = oodLevel === "high" ? 0.35 : oodLevel === "warning" ? 0.6 : 1;
   const ciBorder =
     showCi && oodLevel === "high"
@@ -45,73 +46,19 @@ const Viewport3D = () => {
         : "";
   const scenarioLabel = activeScenarioVariantId ? `Scenario: ${activeScenarioVariantId}` : null;
 
-  useEffect(() => {
-    if (!mountRef.current) return;
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#0f172a");
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 1.2, 3.2);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(mountRef.current.clientWidth, 320);
-    mountRef.current.appendChild(renderer.domElement);
-
-    const light = new THREE.DirectionalLight(0xffffff, 0.9);
-    light.position.set(2, 4, 1);
-    scene.add(light);
-
-    const pointGeometry = new THREE.BufferGeometry();
-    const points = new Float32Array(300 * 3);
-    for (let i = 0; i < points.length; i += 3) {
-      points[i] = (Math.random() - 0.5) * 2;
-      points[i + 1] = (Math.random() - 0.5) * 1.5;
-      points[i + 2] = (Math.random() - 0.5) * 2;
-    }
-    pointGeometry.setAttribute("position", new THREE.BufferAttribute(points, 3));
-    const material = new THREE.PointsMaterial({ color: 0x22d3ee, size: 0.03 });
-    const cloud = new THREE.Points(pointGeometry, material);
-    scene.add(cloud);
-
-    const twinMaterial = new THREE.MeshStandardMaterial({ color: 0xf97316, wireframe: true });
-    const twinMesh = new THREE.Mesh(
-      new THREE.TorusKnotGeometry(0.35, 0.12, 90, 12),
-      twinMaterial,
-    );
-    twinMesh.position.set(0.8, 0.2, 0);
-    scene.add(twinMesh);
-
-    const animate = () => {
-      requestRef.current = requestAnimationFrame(animate);
-      if (isPlaying) {
-        const current = useAppStore.getState().playhead;
-        const next = (current + 16 * speed) % 4000;
-        setPlayhead(next);
-      }
-      twinMaterial.opacity = twinOpacity;
-      twinMaterial.transparent = twinOpacity < 1;
-      twinMaterial.color.set(oodLevel === "high" ? "#64748b" : oodLevel === "warning" ? "#94a3b8" : "#f97316");
-      cloud.rotation.y += 0.002 * speed;
-      twinMesh.rotation.x += 0.004 * speed;
-      twinMesh.rotation.y += 0.002 * speed;
-      renderer.render(scene, camera);
+  const frames = useMemo(() => {
+    if (runResult?.prediction) return runResult.prediction;
+    const fallback = {
+      gt_pose: Array.from({ length: 48 }, () =>
+        Array.from({ length: 53 }, () => [0, 0, 0]),
+      ),
+      twin_pose: Array.from({ length: 48 }, () =>
+        Array.from({ length: 53 }, () => [0, 0, 0]),
+      ),
+      ci_radius: Array.from({ length: 48 }, () => 0.1),
     };
-    animate();
-
-    const handleResize = () => {
-      if (!mountRef.current) return;
-      const width = mountRef.current.clientWidth;
-      renderer.setSize(width, 320);
-      camera.aspect = width / 320;
-      camera.updateProjectionMatrix();
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-      renderer.dispose();
-      mountRef.current?.removeChild(renderer.domElement);
-    };
-  }, [isPlaying, speed]);
+    return fallback;
+  }, [runResult]);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingPoint) return;
@@ -137,6 +84,22 @@ const Viewport3D = () => {
       })),
     } as const;
     setCorrection(clip);
+    if (correctionApplyMode === "calibrate_hint") {
+      setCalibrationVersion(`calib_${Date.now()}`);
+      pushToast({
+        id: `toast_calib_${Date.now()}`,
+        title: "Calibration hint saved",
+        description: "Calibration version updated for future runs.",
+        tone: "success",
+      });
+    } else {
+      pushToast({
+        id: `toast_correction_${Date.now()}`,
+        title: "Correction saved",
+        description: "Local pose fix stored in results.",
+        tone: "success",
+      });
+    }
   };
 
   return (
@@ -149,13 +112,30 @@ const Viewport3D = () => {
           <Toggle label="Show CI" checked={showCi} onChange={setShowCi} />
         </div>
       </div>
-      <div
-        className={`relative h-[320px] rounded-xl border border-slate-800 ${ciBorder}`}
-        ref={mountRef}
+      <ViewportCanvas
+        frames={frames}
+        isPlaying={isPlaying}
+        speed={speed}
+        showGt={showGt}
+        showTwin={showTwin}
+        twinOpacity={twinOpacity}
+        oodLevel={oodLevel}
+        className={ciBorder}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
+        {showCi && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div
+              className="rounded-full border border-cyan-400/40"
+              style={{
+                width: `${Math.max(120, (frames.ci_radius[Math.floor((playhead / 4000) * frames.ci_radius.length)] ?? 0.12) * 520)}px`,
+                height: `${Math.max(120, (frames.ci_radius[Math.floor((playhead / 4000) * frames.ci_radius.length)] ?? 0.12) * 520)}px`,
+              }}
+            />
+          </div>
+        )}
         {correctionMode && (
           <div className="absolute inset-0 pointer-events-none">
             {points.map((point) => (
@@ -179,50 +159,37 @@ const Viewport3D = () => {
             OOD level {oodLevel} — twin visualization degraded
           </div>
         )}
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
-        <div className="flex items-center gap-2">
-          <button
-            className="rounded-lg border border-slate-700 px-3 py-1"
-            onClick={() => setIsPlaying((value) => !value)}
-          >
-            {isPlaying ? "Pause" : "Play"}
-          </button>
-          {[0.5, 1, 2].map((value) => (
-            <button
-              key={value}
-              className={`rounded-lg border border-slate-700 px-3 py-1 ${
-                speed === value ? "bg-cyan-600 text-white" : "text-slate-300"
-              }`}
-              onClick={() => setSpeed(value)}
-            >
-              {value}x
-            </button>
-          ))}
-        </div>
-        <div>
-          <span className="text-slate-400">Time</span> {Math.round(playhead)} ms
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-        <Toggle label="Edit Twin Pose" checked={correctionMode} onChange={setCorrectionMode} />
-        <select
-          className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1"
-          value={correctionApplyMode}
-          onChange={(event) =>
-            setCorrectionApplyMode(event.target.value as "local_fix" | "calibrate_hint")
-          }
-        >
-          <option value="local_fix">local_fix</option>
-          <option value="calibrate_hint">calibrate_hint</option>
-        </select>
-        <button
-          className="rounded-lg border border-slate-700 px-3 py-1"
-          onClick={handleSaveCorrection}
-        >
-          Save Correction
-        </button>
-      </div>
+      </ViewportCanvas>
+      <ViewportPlayback
+        isPlaying={isPlaying}
+        speed={speed}
+        playhead={playhead}
+        onTogglePlay={() => {
+          setIsPlaying((value) => !value);
+          pushToast({
+            id: `toast_play_${Date.now()}`,
+            title: isPlaying ? "Playback paused" : "Playback running",
+            description: "Viewport playback toggled.",
+            tone: "info",
+          });
+        }}
+        onSpeedChange={(value) => {
+          setSpeed(value);
+          pushToast({
+            id: `toast_speed_${Date.now()}`,
+            title: "Playback speed",
+            description: `Speed set to ${value}x.`,
+            tone: "info",
+          });
+        }}
+      />
+      <ViewportCorrectionBar
+        correctionMode={correctionMode}
+        correctionApplyMode={correctionApplyMode}
+        onToggleMode={setCorrectionMode}
+        onApplyModeChange={setCorrectionApplyMode}
+        onSave={handleSaveCorrection}
+      />
       <div className="text-[11px] text-slate-500">
         Visibility: GT {showGt ? "on" : "off"}, Twin {showTwin ? "on" : "off"}, CI{" "}
         {showCi ? "on" : "off"}

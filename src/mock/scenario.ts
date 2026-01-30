@@ -1,5 +1,5 @@
 import type { Recipe, ScenarioResult, ScenarioSet } from "../types";
-import { generateRunResult } from "./runResult";
+import { runTwinCore } from "./twinCore";
 
 const mergeRecipe = (base: Recipe, patch: Partial<Recipe>): Recipe => ({
   ...base,
@@ -14,15 +14,22 @@ const mergeRecipe = (base: Recipe, patch: Partial<Recipe>): Recipe => ({
 export const generateScenarioResults = (scenario: ScenarioSet): ScenarioResult[] => {
   return scenario.variants.map((variant) => {
     const recipe = mergeRecipe(scenario.baseRecipe, variant.recipePatch);
-    const runResult = generateRunResult(
-      recipe.output.quality,
-      { t0_ms: 0, t1_ms: scenario.horizon_ms },
-      900,
-    );
+    const runResult = runTwinCore({
+      trial_id: scenario.id,
+      mode: "standard",
+      do_window: { t0_ms: 0, t1_ms: scenario.horizon_ms },
+      recipe,
+      seed: 42,
+      runMode: "rollout",
+      calibrationVersion: "calib_scenario",
+    });
     return {
       scenarioId: scenario.id,
       variantId: variant.id,
-      runResult: { ...runResult, provenance: { ...runResult.provenance, recipeId: variant.id } },
+      runResult: {
+        ...runResult,
+        provenance: { ...runResult.provenance, recipeId: variant.id },
+      },
     };
   });
 };

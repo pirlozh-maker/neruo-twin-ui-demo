@@ -2,15 +2,15 @@ import { useMemo } from "react";
 import { useAppStore } from "./store";
 
 export const useActiveRunResult = () => {
-  const { activeTab, runResult, scenarioResults, activeScenarioVariantId } = useAppStore();
+  const { activePage, runResult, scenarioResults, activeScenarioVariantId } = useAppStore();
 
   return useMemo(() => {
-    if (activeTab === "scenario" && activeScenarioVariantId) {
+    if (activePage === "scenario" && activeScenarioVariantId) {
       return (
         scenarioResults.find((item) => item.variantId === activeScenarioVariantId)?.runResult ||
         null
       );
     }
     return runResult;
-  }, [activeScenarioVariantId, activeTab, runResult, scenarioResults]);
+  }, [activeScenarioVariantId, activePage, runResult, scenarioResults]);
 };

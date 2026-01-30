@@ -25,8 +25,7 @@ const ScenarioLab = () => {
     setScenarioResults,
     activeScenarioVariantId,
     setActiveScenarioVariantId,
-    enqueueJob,
-    updateJobStatus,
+    pushToast,
   } = useAppStore();
 
   const activeResult = useMemo(
@@ -45,6 +44,12 @@ const ScenarioLab = () => {
     };
     setScenarioSet(next);
     setActiveScenarioVariantId(defaultVariants[0]?.id ?? null);
+    pushToast({
+      id: `toast_scenario_${Date.now()}`,
+      title: "Scenario set created",
+      description: "Base + variants ready to rollout.",
+      tone: "success",
+    });
   };
 
   const updateScenario = (partial: Partial<ScenarioSet>) => {
@@ -64,15 +69,16 @@ const ScenarioLab = () => {
 
   const handleRun = () => {
     if (!scenarioSet) return;
-    const job = enqueueJob("scenario", "Scenario rollout");
-    updateJobStatus(job.id, "running");
     setScenarioResults([]);
     setTimeout(() => {
-      const latest = useAppStore.getState().jobs.find((item) => item.id === job.id);
-      if (!latest || latest.status === "canceled") return;
       setScenarioResults(generateScenarioResults(scenarioSet));
-      updateJobStatus(job.id, "completed");
     }, 1200);
+    pushToast({
+      id: `toast_scenario_run_${Date.now()}`,
+      title: "Scenario rollout started",
+      description: "Generating variant comparisons.",
+      tone: "info",
+    });
   };
 
   return (

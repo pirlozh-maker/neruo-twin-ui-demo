@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useAppStore } from "../state/store";
 
 const SessionNotesPanel = () => {
   const [notes, setNotes] = useState("");
+  const pushToast = useAppStore((state) => state.pushToast);
 
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-xs">
@@ -18,7 +20,15 @@ const SessionNotesPanel = () => {
       <div className="mt-2 flex justify-end">
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
-          onClick={() => setNotes("")}
+          onClick={() => {
+            setNotes("");
+            pushToast({
+              id: `toast_notes_${Date.now()}`,
+              title: "Notes cleared",
+              description: "Session notes reset.",
+              tone: "warning",
+            });
+          }}
         >
           Clear
         </button>

@@ -44,6 +44,17 @@ export type Recipe = {
   };
 };
 
+export type RunState =
+  | "IDLE"
+  | "PREVIEW_RUNNING"
+  | "BAKE_RUNNING"
+  | "ROLLOUT_RUNNING"
+  | "SWEEP_RUNNING"
+  | "EXPORTING"
+  | "ERROR";
+
+export type RunMode = "preview" | "bake" | "rollout" | "sweep";
+
 export type TwinScoreBreakdown = {
   input: number;
   sync: number;
@@ -54,19 +65,44 @@ export type TwinScoreBreakdown = {
 export type TwinScore = {
   total: number;
   breakdown: TwinScoreBreakdown;
-  oodLevel: "low" | "medium" | "warning" | "high";
+  oodLevel: "normal" | "warning" | "high";
+  trend: number[];
 };
 
 export type ExplainResult = {
-  channels: string[];
-  bands: string[];
-  time_slices: string[];
+  channels: Array<{ id: string; weight: number; window: WindowRange }>;
+  bands: Array<{ id: string; weight: number }>;
+  time_slices: Array<{ id: string; window: WindowRange; weight: number }>;
+};
+
+export type TimelineTrack = {
+  id: "qc" | "twinScore" | "ood";
+  values: number[];
+};
+
+export type TimelineEvent = {
+  id: string;
+  type: "HS" | "TO";
+  time_ms: number;
+};
+
+export type TimelineMark = {
+  id: string;
+  label: string;
+  time_ms: number;
 };
 
 export type RunResult = {
   runId: string;
   createdAt: string;
   latencyMs: number;
+  mode: RunMode;
+  do_window: WindowRange;
+  prediction: {
+    gt_pose: number[][][];
+    twin_pose: number[][][];
+    ci_radius: number[];
+  };
   provenance: {
     modelVersion: string;
     dataVersion: string;
@@ -74,6 +110,7 @@ export type RunResult = {
     seed: number;
     raw_fingerprint: string;
     feature_snapshot_version: string;
+    run_hash: string;
   };
   metrics: {
     speed: number;
@@ -81,8 +118,19 @@ export type RunResult = {
     cadence: number;
   };
   twinScore: TwinScore;
+  ood_level: "normal" | "warning" | "high";
   explain: ExplainResult;
-  alerts: string[];
+  alerts: Array<{
+    id: string;
+    label: string;
+    severity: "info" | "warning" | "high";
+    window: WindowRange;
+  }>;
+  timeline: {
+    tracks: TimelineTrack[];
+    events: TimelineEvent[];
+    marks: TimelineMark[];
+  };
   sweep?: {
     x: number[];
     y: number[];
@@ -129,7 +177,7 @@ export type CorrectionClip = {
   }>;
 };
 
-export type JobType = "bake" | "scenario" | "sweep";
+export type JobType = "bake" | "scenario" | "sweep" | "rollout";
 
 export type JobStatus = "queued" | "running" | "canceled" | "completed";
 

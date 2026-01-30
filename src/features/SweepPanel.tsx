@@ -1,9 +1,9 @@
 import { useAppStore } from "../state/store";
 
 const SweepPanel = () => {
-  const { isSweeping, sweepData, setIsSweeping } = useAppStore();
+  const { runState, sweepData, cancelRun, pushToast, setSweepData } = useAppStore();
 
-  if (!isSweeping) return null;
+  if (runState !== "SWEEP_RUNNING" && !sweepData) return null;
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-6">
@@ -12,7 +12,16 @@ const SweepPanel = () => {
           <h3 className="text-sm font-semibold">Sweep Response (noise_sigma × channel_count)</h3>
           <button
             className="rounded-lg border border-slate-700 px-3 py-1 text-xs"
-            onClick={() => setIsSweeping(false)}
+            onClick={() => {
+              cancelRun();
+              setSweepData(null);
+              pushToast({
+                id: `toast_sweep_close_${Date.now()}`,
+                title: "Sweep dismissed",
+                description: "Sweep panel closed.",
+                tone: "warning",
+              });
+            }}
           >
             Close
           </button>

@@ -36,3 +36,38 @@ export const exportBundle = (params: {
   if (correction) downloadJson("correction.json", correction);
   if (runResult) downloadJson("run_result.json", runResult);
 };
+
+export const buildExportBundle = (params: {
+  recipe: Recipe;
+  runResult: RunResult;
+  trial: TrialMeta;
+  macros: Macro[];
+  scenarioSet: ScenarioSet | null;
+  correction: CorrectionClip | null;
+}) => {
+  const { recipe, runResult, trial, macros, scenarioSet, correction } = params;
+  const filename = `twin_bundle_${trial.id}_${Date.now()}.json`;
+  const payload: Record<string, unknown> = {
+    provenance: {
+      modelVersion: trial.modelVersion,
+      dataVersion: trial.dataVersion,
+      recipeId: trial.recipeId,
+      seed: trial.seed,
+      raw_fingerprint: `raw_${trial.id}`,
+      feature_snapshot_version: "fsnap_0.4.0",
+      run_hash: runResult.provenance.run_hash,
+    },
+    recipe,
+    run_result: runResult,
+    macros,
+  };
+  if (scenarioSet) payload.scenario_set = scenarioSet;
+  if (correction) payload.correction = correction;
+
+  return {
+    id: `bundle_${Date.now()}`,
+    filename,
+    createdAt: new Date().toLocaleString(),
+    payload,
+  };
+};
