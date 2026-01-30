@@ -5,7 +5,8 @@ const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
 const WindowInspector = () => {
-  const { doWindow, setDoWindow, playhead, setPlayhead } = useAppStore();
+  const { doWindow, setDoWindow, playhead, setPlayhead, pushToast, runState } = useAppStore();
+  const isLocked = runState === "BAKE_RUNNING" || runState === "ROLLOUT_RUNNING";
 
   const duration = useMemo(
     () => Math.abs(doWindow.t1_ms - doWindow.t0_ms),
@@ -16,6 +17,12 @@ const WindowInspector = () => {
     const t0 = clamp(doWindow.t0_ms + delta, 0, 4000);
     const t1 = clamp(doWindow.t1_ms + delta, 0, 4000);
     setDoWindow({ t0_ms: t0, t1_ms: t1 });
+    pushToast({
+      id: `toast_window_${Date.now()}`,
+      title: "Window shifted",
+      description: `Window moved by ${delta}ms.`,
+      tone: "info",
+    });
   };
 
   return (
@@ -24,6 +31,11 @@ const WindowInspector = () => {
         <h3 className="text-sm font-semibold">Window Inspector</h3>
         <span className="text-[11px] text-slate-500">len {Math.round(duration)} ms</span>
       </div>
+      {isLocked && (
+        <div className="mt-2 text-[11px] text-orange-300">
+          Bake running — edits locked (changes require rebake).
+        </div>
+      )}
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="space-y-1">
           <span className="text-slate-400">t0_ms</span>
@@ -34,6 +46,7 @@ const WindowInspector = () => {
             onChange={(event) =>
               setDoWindow({ t0_ms: Number(event.target.value), t1_ms: doWindow.t1_ms })
             }
+            disabled={isLocked}
           />
         </label>
         <label className="space-y-1">
@@ -45,6 +58,7 @@ const WindowInspector = () => {
             onChange={(event) =>
               setDoWindow({ t0_ms: doWindow.t0_ms, t1_ms: Number(event.target.value) })
             }
+            disabled={isLocked}
           />
         </label>
       </div>
@@ -52,24 +66,42 @@ const WindowInspector = () => {
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
           onClick={() => handleNudge(-100)}
+          disabled={isLocked}
         >
           ◀︎ -100ms
         </button>
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
           onClick={() => handleNudge(100)}
+          disabled={isLocked}
         >
           +100ms ▶︎
         </button>
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
-          onClick={() => setPlayhead(clamp(playhead - 120, 0, 4000))}
+          onClick={() => {
+            setPlayhead(clamp(playhead - 120, 0, 4000));
+            pushToast({
+              id: `toast_playhead_${Date.now()}`,
+              title: "Playhead adjusted",
+              description: "Moved playhead backward.",
+              tone: "info",
+            });
+          }}
         >
           Playhead -120
         </button>
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
-          onClick={() => setPlayhead(clamp(playhead + 120, 0, 4000))}
+          onClick={() => {
+            setPlayhead(clamp(playhead + 120, 0, 4000));
+            pushToast({
+              id: `toast_playhead_forward_${Date.now()}`,
+              title: "Playhead adjusted",
+              description: "Moved playhead forward.",
+              tone: "info",
+            });
+          }}
         >
           Playhead +120
         </button>
@@ -79,14 +111,30 @@ const WindowInspector = () => {
           <button
             key={window}
             className="rounded-lg border border-slate-700 px-3 py-1"
-            onClick={() => setDoWindow({ t0_ms: 0, t1_ms: window })}
+            onClick={() => {
+              setDoWindow({ t0_ms: 0, t1_ms: window });
+              pushToast({
+                id: `toast_window_preset_${Date.now()}`,
+                title: "Window preset",
+                description: `Window set to ${window}ms.`,
+                tone: "info",
+              });
+            }}
           >
             {window}ms
           </button>
         ))}
         <button
           className="rounded-lg border border-slate-700 px-3 py-1"
-          onClick={() => setPlayhead(0)}
+          onClick={() => {
+            setPlayhead(0);
+            pushToast({
+              id: `toast_playhead_reset_${Date.now()}`,
+              title: "Playhead reset",
+              description: "Playhead set to start.",
+              tone: "info",
+            });
+          }}
         >
           Reset Playhead
         </button>

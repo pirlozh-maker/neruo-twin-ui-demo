@@ -13,6 +13,12 @@ const TwinScorePanel = () => {
             <span className="text-slate-400">Total</span>
             <span className="text-lg font-semibold text-cyan-300">{score.total}</span>
           </div>
+          <div className="h-2 w-full rounded-full bg-slate-800">
+            <div
+              className="h-2 rounded-full bg-cyan-500"
+              style={{ width: `${Math.round(score.total)}%` }}
+            />
+          </div>
           <div className="space-y-1 text-slate-300">
             <div className="flex justify-between">
               <span>Input</span>
@@ -35,11 +41,28 @@ const TwinScorePanel = () => {
             OOD level: <span className="font-semibold text-orange-300">{score.oodLevel}</span>
           </div>
           <div className="text-[11px] text-slate-500">
-            Alerts: {runResult?.alerts.join(", ")}
+            Trend: {score.trend.slice(0, 6).join(" → ")}
           </div>
         </div>
       ) : (
-        <p className="mt-3 text-xs text-slate-500">Run Preview/Bake to populate scores.</p>
+        <div className="mt-3 space-y-2 text-xs text-slate-500">
+          <div className="flex items-center justify-between">
+            <span>Total</span>
+            <span className="text-slate-600">--</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-slate-800" />
+          <div className="space-y-1">
+            {["Input", "Sync", "SelfConsistency", "OOD"].map((label) => (
+              <div key={label} className="flex justify-between">
+                <span>{label}</span>
+                <span className="text-slate-600">--</span>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[11px] text-slate-500">
+            Preview/Bake to populate scores and trend.
+          </div>
+        </div>
       )}
     </section>
   );

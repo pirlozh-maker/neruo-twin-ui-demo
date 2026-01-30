@@ -10,7 +10,7 @@ type Props = {
 };
 
 const RecipeActions = ({ recipe, onLoad }: Props) => {
-  const { setRecipe, resetRecipe } = useAppStore();
+  const { setRecipe, resetRecipe, pushToast } = useAppStore();
 
   return (
     <div className="space-y-2 text-xs">
@@ -21,7 +21,15 @@ const RecipeActions = ({ recipe, onLoad }: Props) => {
         </label>
         <button
           className="rounded-lg border border-slate-700 px-3 py-2"
-          onClick={() => downloadJson("recipe.json", recipe)}
+          onClick={() => {
+            downloadJson("recipe.json", recipe);
+            pushToast({
+              id: `toast_recipe_save_${Date.now()}`,
+              title: "Recipe saved",
+              description: "recipe.json exported.",
+              tone: "success",
+            });
+          }}
         >
           Save Recipe JSON
         </button>
@@ -31,12 +39,31 @@ const RecipeActions = ({ recipe, onLoad }: Props) => {
           <button
             key={key}
             className="rounded-lg border border-slate-700 px-3 py-2"
-            onClick={() => setRecipe(presets[key])}
+            onClick={() => {
+              setRecipe(presets[key]);
+              pushToast({
+                id: `toast_preset_${Date.now()}`,
+                title: "Preset applied",
+                description: `Preset ${key} loaded.`,
+                tone: "info",
+              });
+            }}
           >
             Preset: {key}
           </button>
         ))}
-        <button className="rounded-lg border border-slate-700 px-3 py-2" onClick={resetRecipe}>
+        <button
+          className="rounded-lg border border-slate-700 px-3 py-2"
+          onClick={() => {
+            resetRecipe();
+            pushToast({
+              id: `toast_recipe_reset_${Date.now()}`,
+              title: "Recipe reset",
+              description: "Returned to default recipe.",
+              tone: "warning",
+            });
+          }}
+        >
           Reset
         </button>
       </div>

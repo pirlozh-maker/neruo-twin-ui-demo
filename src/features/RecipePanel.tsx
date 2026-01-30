@@ -1,7 +1,3 @@
-import Accordion from "../components/Accordion";
-import Slider from "../components/Slider";
-import Toggle from "../components/Toggle";
-import { presets, CHANNELS_64 } from "../utils/recipes";
 import type { ChangeEvent } from "react";
 import { useAppStore } from "../state/store";
 import type { Recipe } from "../types";
@@ -15,7 +11,7 @@ import RecipePriorSection from "./recipe/RecipePriorSection";
 import RecipeSyncSection from "./recipe/RecipeSyncSection";
 
 const RecipePanel = () => {
-  const { recipe, setRecipe, mode } = useAppStore();
+  const { recipe, setRecipe, mode, pushToast } = useAppStore();
   const isLab = mode === "lab";
   const updateRecipe = (next: Recipe) => setRecipe(next);
 
@@ -40,7 +36,15 @@ const RecipePanel = () => {
         <h2 className="text-sm font-semibold">Recipe (Kitchen)</h2>
         <button
           className="text-xs text-cyan-300"
-          onClick={() => downloadJson("recipe.json", recipe)}
+          onClick={() => {
+            downloadJson("recipe.json", recipe);
+            pushToast({
+              id: `toast_recipe_${Date.now()}`,
+              title: "Recipe exported",
+              description: "recipe.json saved.",
+              tone: "info",
+            });
+          }}
         >
           Save JSON
         </button>

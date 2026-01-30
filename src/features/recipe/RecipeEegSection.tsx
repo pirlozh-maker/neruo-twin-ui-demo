@@ -1,5 +1,6 @@
 import Accordion from "../../components/Accordion";
 import Slider from "../../components/Slider";
+import { useAppStore } from "../../state/store";
 import { CHANNELS_64 } from "../../utils/recipes";
 import type { Recipe } from "../../types";
 
@@ -9,6 +10,7 @@ type Props = {
 };
 
 const RecipeEegSection = ({ recipe, updateRecipe }: Props) => {
+  const pushToast = useAppStore((state) => state.pushToast);
   const handleNoiseType = (value: "white" | "1f") =>
     updateRecipe({
       ...recipe,
@@ -66,7 +68,15 @@ const RecipeEegSection = ({ recipe, updateRecipe }: Props) => {
                   ? "border-cyan-500 bg-cyan-500/30 text-white"
                   : "border-slate-700 text-slate-300"
               }`}
-              onClick={() => handleNoiseType(value)}
+              onClick={() => {
+                handleNoiseType(value);
+                pushToast({
+                  id: `toast_eeg_noise_${Date.now()}`,
+                  title: "Noise type updated",
+                  description: `noise_type set to ${value}.`,
+                  tone: "info",
+                });
+              }}
             >
               {value}
             </button>
@@ -97,7 +107,15 @@ const RecipeEegSection = ({ recipe, updateRecipe }: Props) => {
                   ? "border-cyan-500 bg-cyan-500/30 text-white"
                   : "border-slate-700 text-slate-300"
               }`}
-              onClick={() => handleMaskMode(value)}
+              onClick={() => {
+                handleMaskMode(value);
+                pushToast({
+                  id: `toast_mask_${Date.now()}`,
+                  title: "Mask mode updated",
+                  description: `mask.mode set to ${value}.`,
+                  tone: "info",
+                });
+              }}
             >
               {value}
             </button>
