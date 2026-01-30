@@ -45,6 +45,19 @@ const Viewport3D = () => {
         : "";
   const scenarioLabel = activeScenarioVariantId ? `Scenario: ${activeScenarioVariantId}` : null;
 
+  // Keep refs for frequently-updated values so the animation loop does not
+  // capture stale values or cause the effect to re-run on every frame.
+  const isPlayingRef = useRef(isPlaying);
+  const speedRef = useRef(speed);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
+
   useEffect(() => {
     if (!mountRef.current) return;
     const scene = new THREE.Scene();
@@ -81,16 +94,23 @@ const Viewport3D = () => {
 
     const animate = () => {
       requestRef.current = requestAnimationFrame(animate);
-      if (isPlaying) {
-        const next = (playhead + 16 * speed) % 4000;
-        setPlayhead(next);
+      if (isPlayingRef.current) {
+        const current = useAppStore.getState().playhead;
+        const next = (current + 16 * speedRef.current) % 4000;
+        useAppStore.getState().setPlayhead(next);
       }
-      twinMaterial.opacity = twinOpacity;
-      twinMaterial.transparent = twinOpacity < 1;
-      twinMaterial.color.set(oodLevel === "high" ? "#64748b" : oodLevel === "warning" ? "#94a3b8" : "#f97316");
-      cloud.rotation.y += 0.002 * speed;
-      twinMesh.rotation.x += 0.004 * speed;
-      twinMesh.rotation.y += 0.002 * speed;
+      // Read latest values from store so visuals react to state changes without
+      // re-creating the whole scene.
+      const oodLevelNow = useAppStore.getState().runResult?.twinScore.oodLevel ?? "low";
+      const twinOpacityNow = oodLevelNow === "high" ? 0.35 : oodLevelNow === "warning" ? 0.6 : 1;
+      twinMaterial.opacity = twinOpacityNow;
+      twinMaterial.transparent = twinOpacityNow < 1;
+      twinMaterial.color.set(
+        oodLevelNow === "high" ? "#64748b" : oodLevelNow === "warning" ? "#94a3b8" : "#f97316",
+      );
+      cloud.rotation.y += 0.002 * speedRef.current;
+      twinMesh.rotation.x += 0.004 * speedRef.current;
+      twinMesh.rotation.y += 0.002 * speedRef.current;
       renderer.render(scene, camera);
     };
     animate();
@@ -110,7 +130,7 @@ const Viewport3D = () => {
       renderer.dispose();
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [isPlaying, playhead, setPlayhead, speed]);
+  }, []);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingPoint) return;
